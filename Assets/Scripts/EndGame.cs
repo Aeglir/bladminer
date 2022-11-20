@@ -8,7 +8,9 @@ public class EndGame : MonoBehaviour
 {
     public GameObject EndGameCanvas;
     public GameObject StartGameCanvas;
-
+    public GameObject MulitEndPanel;
+    public Text ResultLabel;
+    public Text TitilLabel;
     public Countdown countdown;
     public StopBtn stopBtn;
     public SoundSetting soundSetting;
@@ -18,6 +20,8 @@ public class EndGame : MonoBehaviour
     public GameManager gameManager;
     public ScoreSlider scoreSlider;
     public PlayerInput inputManager;
+    private bool hasResult = false;
+    private bool hasEnd = false;
 
     public void Start()
     {
@@ -60,9 +64,34 @@ public class EndGame : MonoBehaviour
 
     public void Update()
     {
-        if(score.score <= 99999999)
+        if (score.score <= 99999999)
             EndScore.text = score.score.ToString();
         else
             EndScore.text = (99999999).ToString();
+    }
+
+    public void EndMutilGame()
+    {
+        countdown.time=0;
+        MulitEndPanel.SetActive(true);
+        if (hasResult)
+            ResultLabel.gameObject.SetActive(true);
+        hasEnd = true;
+    }
+
+    public void SetResult(string localScore, string remoteScore)
+    {
+        if (localScore.CompareTo(remoteScore) >= 0)
+        {
+            ResultLabel.text = "胜利";
+        }
+        else
+        {
+            ResultLabel.text = "失败";
+        }
+        TitilLabel.text = "你的分数： " + localScore + "   对手分数: " + remoteScore;
+        if (hasEnd)
+            ResultLabel.gameObject.SetActive(true);
+        hasResult = true;
     }
 }

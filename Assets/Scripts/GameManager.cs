@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Events;
 using System;
+using UnityEngine.UI;
 
 public class ScoreEvent : UnityEvent<int> { }
 [System.Serializable]
@@ -10,6 +11,19 @@ public class FeverEvent : UnityEvent<bool> { }
 [DefaultExecutionOrder(-1)]
 public class GameManager : Singleton<GameManager>
 {
+    public const int ReciveUDPport = 9090;
+    public const int SentUDPport = 9091;
+    private ServerManager server;
+    private ClientManager client;
+    private bool isServer = false;
+    private bool isClient = false;
+    public Text MulitPlayLabel;
+    public GameObject RoomPanel;
+    public EndGame endGame;
+    public button StartButtonPanel;
+    public bool isMult{
+        get=>isClient||isServer;
+    }
     [Header("随机种子")]
     public int seed;
     [Header("分数")]
@@ -247,5 +261,54 @@ public class GameManager : Singleton<GameManager>
     public float getRedom(float minValue, float maxValue)
     {
         return UnityEngine.Random.Range(minValue, maxValue);
+    }
+    public async void SeverEnable()
+    {
+        if (isClient || isServer)
+            return;
+        isServer = true;
+        server = new ServerManager();
+        MulitPlayLabel.text = "Wait For Connecting";
+        await server.EnableServer();
+        MulitPlayLabel.text = "Success";
+        await Task.Delay(1000);
+        RoomPanel.SetActive(false);
+        GameStart();
+        string remoteScore = await server.ReceiveMessage();
+        while(remoteScore.Equals("master")||remoteScore.Equals("success"))
+            remoteScore = await server.ReceiveMessage();
+        endGame.SetResult(score.ToString(),remoteScore);
+    }
+    public async void ClientEnable()
+    {
+        if (isServer || isClient)
+            return;
+        isClient = true;
+        client = new ClientManager();
+        MulitPlayLabel.text = "Finding Server";
+        await client.EnableClient();
+        MulitPlayLabel.text = "Success";
+        await Task.Delay(1000);
+        RoomPanel.SetActive(false);
+        GameStart();
+        string remoteScore = await client.ReceiveMessage();
+        while(remoteScore.Equals("master"))
+            remoteScore = await client.ReceiveMessage();
+        endGame.SetResult(score.ToString(),remoteScore);
+    }
+
+    public void GameStart(){
+        StartButtonPanel.StartGameBtn();
+    }
+
+    public void GameEnd(){
+        if(isServer){
+            server.SendMessage(score.ToString());
+        }
+        if(isClient){
+            client.SendMessage(score.ToString());
+        }
+        endGame.EndMutilGame();
+        // MulitEndPanel.SetActive(true);
     }
 }
